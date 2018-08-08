@@ -1,0 +1,14 @@
+[package]
+name = "pastebin"
+version = "0.0.0"
+publish = false
+
+[dependencies]
+rocket = "0.3.14"
+rocket_codegen = "0.3.14"
+rand = "0.4"
+multipart = "0.15.2"
+toml = "0.4.6"
+adjective_adjective_animal = "0.1.0"
+#tokio = "0.1.7"
+#tokio-codec = "0.1.0"
