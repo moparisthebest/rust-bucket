@@ -1,12 +1,13 @@
 use std::fmt;
 use std::borrow::Cow;
 
-use rocket::request::FromParam;
+use rocket::request::{FromParam,FromFormValue};
 use rocket::http::RawStr;
 
 use adjective_adjective_animal::Generator;
 
 /// A _probably_ unique paste ID.
+#[derive(Deserialize, Serialize, Debug)]
 pub struct PasteID<'a>(Cow<'a, str>);
 
 impl<'a> PasteID<'a> {
@@ -18,6 +19,10 @@ impl<'a> PasteID<'a> {
         let mut generator = Generator::default();
 
         PasteID(Cow::Owned(generator.next().unwrap()))
+    }
+
+    pub fn of(s : &'a str) -> PasteID<'a> {
+        PasteID(Cow::Borrowed(s))
     }
 }
 
@@ -42,6 +47,17 @@ impl<'a> FromParam<'a> for PasteID<'a> {
     type Error = &'a RawStr;
 
     fn from_param(param: &'a RawStr) -> Result<PasteID<'a>, &'a RawStr> {
+        match valid_id(param) {
+            true => Ok(PasteID(Cow::Borrowed(param))),
+            false => Err(param)
+        }
+    }
+}
+
+impl<'a> FromFormValue<'a> for PasteID<'a> {
+    type Error = &'a RawStr;
+
+    fn from_form_value(param: &'a RawStr) -> Result<PasteID<'a>, &'a RawStr> {
         match valid_id(param) {
             true => Ok(PasteID(Cow::Borrowed(param))),
             false => Err(param)

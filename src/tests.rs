@@ -1,4 +1,4 @@
-use super::{rocket, index};
+use super::{rocket};
 use rocket::local::Client;
 use rocket::http::{Status, ContentType};
 
@@ -11,7 +11,7 @@ fn check_index() {
     let client = Client::new(rocket()).unwrap();
 
     // Ensure the index returns what we expect.
-    let mut response = client.get("/").dispatch();
+    let response = client.get("/").dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(response.content_type(), Some(ContentType::Plain));
     //assert_eq!(response.body_string(), Some(index().into()))

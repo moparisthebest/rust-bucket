@@ -48,7 +48,7 @@ impl FromData for MultipartUpload {
 
         mp.foreach_entry(|mut entry| match entry.headers.name.as_str() {
             "file" => {
-                panic!("filename: {:?}", entry.headers.filename);
+                println!("filename: {:?}", entry.headers.filename);
                 let mut d = Vec::new();
                 entry.data.read_to_end(&mut d).expect("cant read");
                 file = Some(d);
