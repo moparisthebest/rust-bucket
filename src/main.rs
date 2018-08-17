@@ -131,51 +131,34 @@ impl<'a> PasteInfo<'a> {
     }
 }
 
-/*
-trait Backend {
-    fn new_paste(&self) -> (String, String);
 
-    fn upload(&self, paste: Data, _key: Option<PasteID>) -> io::Result<String>;
+trait Backend: Sync + Send {
+    fn new_paste(&self) -> (String, String, String);
 
-    fn upload_string(&self, paste: &str, _key: Option<PasteID>) -> io::Result<String>;
+    fn file_paths(&self, id: PasteID) -> (String, String, String);
+
+    fn upload(&self, paste: Data, _key: Option<PasteID>) -> Result<String>;
+
+    fn upload_multipart(&self, paste: MultipartUpload) -> Result<String>;
+
+    fn upload_string(&self, paste: &PasteForm) -> Result<String>;
+
+    fn upload_tcp_stream(&self, mut stream: TcpStream) -> Result<()>;
+
+    fn get(&self, id: PasteID) -> Result<content::Plain<File>>;
 }
 
 #[derive(Default)]
 struct DefaultBackend{}
 
-impl Backend for DefaultBackend {
-    fn new_paste(&self) -> (String, String) {
-        loop {
-            let id = PasteID::new();
-            let filename = format!("upload/{id}", id = id);
-            if !Path::new(&filename).exists() {
-                let url = format!("{host}/{id}\n", host = HOST, id = id);
-                return (filename, url)
-            }
-        }
-    }
 
-    fn upload(&self, paste: Data, _key: Option<PasteID>) -> io::Result<String> {
-        let (filename, url) = self.new_paste();
-
-        paste.stream_to_file(Path::new(&filename))?;
-        Ok(url)
-    }
-
-    fn upload_string(&self, paste: &str, _key: Option<PasteID>) -> io::Result<String> {
-        let (filename, url) = self.new_paste();
-
-        fs::write(filename, paste)?;
-        Ok(url)
-    }
-}
-*/
-
+/*
 enum Backend {
     PlainFile
 }
-
-impl Backend {
+*/
+impl Backend for DefaultBackend {
+//impl Backend {
     fn new_paste(&self) -> (String, String, String) {
         loop {
             let id = PasteID::new();
@@ -212,8 +195,7 @@ impl Backend {
         Ok(url)
     }
 
-    fn upload_tcp_stream(&self, mut stream: TcpStream) -> Result<()>
-    {
+    fn upload_tcp_stream(&self, mut stream: TcpStream) -> Result<()> {
         let (filename, info_filename, url) = self.new_paste();
 
         PasteInfo::default().write(info_filename)?;
@@ -247,12 +229,13 @@ impl Backend {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for &'a Backend {
+impl<'a, 'r> FromRequest<'a, 'r> for &'a dyn Backend {
     type Error = ();
 
     fn from_request(req: &'a Request<'r>) -> request::Outcome<Self, ()> {
-        let backend = req.guard::<State<Backend>>()?;
-        Success(backend.inner())
+        let backend = req.guard::<State<Box<Backend>>>()?;
+        let backend = backend.inner();
+        Success(backend.as_ref())
     }
 }
 
@@ -376,10 +359,17 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W, upload_max_size: u
     }
 }
 
-fn run_tcp(){
+/*
+//fn run_tcp() {
+fn run_tcp<T: Send + Sync + 'static>(backend: T)
+    where T: Backend
+{
     // Bind the server's socket
-    thread::spawn(|| {
-        let backend = &Backend::PlainFile;
+    thread::spawn(move || {
+        //let backendbla = DefaultBackend::default();
+        //let backend = &backendbla;
+        //let backend = backend.as_ref();
+        let backend = &backend as &'static Backend;
         let listener = TcpListener::bind("127.0.0.1:12345").unwrap();
 
         loop {
@@ -397,9 +387,12 @@ fn run_tcp(){
 
     });
 }
+*/
 
 fn main() {
-    let backend = Backend::PlainFile;
-    run_tcp();
-    rocket().manage(backend).launch();
+    let backend = Box::new(DefaultBackend::default());
+    //let tcp_backend = DefaultBackend::default();
+    //run_tcp(tcp_backend);
+    //run_tcp();
+    rocket().manage(backend as Box<Backend + 'static>).launch();
 }
