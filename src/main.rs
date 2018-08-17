@@ -16,7 +16,7 @@ use std::io;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::thread;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use std::io::{Write,Read};
 use std::time::{Duration, SystemTime};
 
@@ -341,6 +341,22 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W) -> io::Result<u64>
     }
 }
 
+fn consume_paste(backend: &Backend, mut stream: TcpStream, timeout: Option<Duration>) -> io::Result<()>
+{
+    let (filename, _info_filename, url) = backend.new_paste();
+
+    let mut paste_file = File::create(&filename)?;
+
+    stream.set_read_timeout(timeout)?;
+    stream.set_write_timeout(timeout)?;
+
+    stream.write(&url.into_bytes())?;
+    stream.flush()?;
+
+    copy(&mut stream, &mut paste_file)?;
+    Ok(())
+}
+
 fn run_tcp(){
     // Bind the server's socket
     thread::spawn(|| {
@@ -352,19 +368,7 @@ fn run_tcp(){
             match listener.accept() {
                 Ok((mut stream, _addr)) => {
                     thread::spawn(move || {
-                        let (filename, _info_filename, url) = backend.new_paste();
-
-                        let mut paste_file = File::create(&filename).expect("cannot create file?");
-
-                        stream.set_read_timeout(timeout).expect("set read timeout failed?");
-                        stream.set_write_timeout(timeout).expect("set write timeout failed?");
-
-                        stream.write(&url.into_bytes()).expect("write failed?");
-                        stream.flush().expect("can't flush?");
-
-                        copy(&mut stream, &mut paste_file).expect("copy failed?");
-
-                        //handle_request(stream, addr);
+                        consume_paste(backend, stream, timeout).is_ok(); // again we don't care about this error
                     });
                 },
                 Err(_e) => {
@@ -372,6 +376,7 @@ fn run_tcp(){
                 },
             };
         };
+
     });
 }
 
