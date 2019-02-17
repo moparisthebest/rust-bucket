@@ -1,15 +1,15 @@
-#![feature(plugin, decl_macro, custom_derive)]
-#![plugin(rocket_codegen)]
+#![feature(proc_macro_hygiene, decl_macro)]
 
+#[macro_use]
 extern crate rocket;
 extern crate adjective_adjective_animal;
-extern crate multipart;
+//extern crate multipart;
 extern crate toml;
 #[macro_use]
 extern crate serde_derive;
 
 mod paste_id;
-mod mpu;
+//mod mpu;
 #[cfg(test)] mod tests;
 
 use std::io;
@@ -28,7 +28,7 @@ use rocket::request::{self, Request, FromRequest, State, LenientForm};
 use rocket::outcome::Outcome::*;
 
 use paste_id::PasteID;
-use mpu::MultipartUpload;
+//use mpu::MultipartUpload;
 
 const HOST: &'static str = "http://localhost:8000";
 
@@ -139,7 +139,7 @@ trait Backend: Sync + Send {
 
     fn upload(&self, paste: Data, _key: Option<PasteID>) -> Result<String>;
 
-    fn upload_multipart(&self, paste: MultipartUpload) -> Result<String>;
+//    fn upload_multipart(&self, paste: MultipartUpload) -> Result<String>;
 
     fn upload_string(&self, paste: &PasteForm) -> Result<String>;
 
@@ -180,14 +180,14 @@ impl Backend for DefaultBackend {
         paste.stream_to_file(Path::new(&filename))?;
         Ok(url)
     }
-
+/*
     fn upload_multipart(&self, paste: MultipartUpload) -> Result<String> {
         let (filename, info_filename, url) = self.new_paste();
         PasteInfo::default().write(info_filename)?;
         paste.stream_to_file(Path::new(&filename))?;
         Ok(url)
     }
-
+*/
     fn upload_string(&self, paste: &PasteForm) -> Result<String> {
         let (filename, info_filename, url) = self.new_paste();
         PasteInfo::from(paste).write(info_filename)?;
@@ -265,14 +265,16 @@ impl<'a> From<&'a PasteForm> for PasteInfo<'a> {
 // todo: change /w to /, shouldn't conflict because of format, but it does currently
 #[post("/w", format = "application/x-www-form-urlencoded", data = "<paste>")]
 fn web_post(backend: &Backend, paste: LenientForm<PasteForm>) -> Result<String> {
-    backend.upload_string(paste.get())
+    backend.upload_string(&paste.into_inner())
 }
 
+/*
 // todo: change /w to /, shouldn't conflict because of format, but it does currently
 #[post("/m", format = "multipart/form-data", data = "<paste>")]
 fn mpu_post(backend: &Backend, paste: MultipartUpload) -> Result<String> {
     backend.upload_multipart(paste)
 }
+*/
 
 #[put("/", data = "<paste>")]
 fn upload_put(backend: &Backend, paste: Data) -> Result<String> {
@@ -330,7 +332,7 @@ fn rocket() -> rocket::Rocket {
     rocket::ignite().mount("/", routes![
     index, files,
     web_post,
-    mpu_post,
+//    mpu_post,
     upload_post, upload_put, upload_patch,
     upload_post_key, upload_put_key, upload_patch_key,
     get, delete

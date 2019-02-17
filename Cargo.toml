@@ -4,12 +4,11 @@ version = "0.0.0"
 publish = false
 
 [dependencies]
-rocket = "0.3.14"
-rocket_codegen = "0.3.14"
-rand = "0.4"
-multipart = "0.15.2"
-toml = "0.4.6"
-serde_derive = "1.0.71"
-serde        = "1.0.71"
+rocket = "0.4.0"
+rand = "0.6.5"
+#multipart = "0.16.1"
+toml = "0.4.10"
+serde = "1.0.88"
+serde_derive = "1.0.88"
 adjective_adjective_animal = "0.1.0"
 #syntect = "2.1.0"
