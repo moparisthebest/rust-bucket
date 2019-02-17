@@ -1,14 +1,29 @@
 [package]
-name = "pastebin"
-version = "0.0.0"
-publish = false
+name = "rust_bucket"
+version = "0.1.0"
+authors = ["moparisthebest <admin@moparisthebest.com>"]
+
+description = "Pastebin."
+repository  = "https://code.moparisthebest.com/moparisthebest/rust_bucket"
+keywords    = ["paste", "pastebin"]
+
+license = "AGPL-3.0+"
+readme = "readme.md"
+
+edition = "2018"
+
+include = [
+    "**/*.rs",
+    "static/**",
+    "Cargo.toml",
+    "*.md",
+]
 
 [dependencies]
 rocket = "0.4.0"
 rand = "0.6.5"
 #multipart = "0.16.1"
 toml = "0.4.10"
-serde = "1.0.88"
-serde_derive = "1.0.88"
+serde = { version = "1.0.88", features = ["derive"] }
 adjective_adjective_animal = "0.1.0"
 #syntect = "2.1.0"

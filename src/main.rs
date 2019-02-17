@@ -1,13 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
-#[macro_use]
-extern crate rocket;
-extern crate adjective_adjective_animal;
-//extern crate multipart;
-extern crate toml;
-#[macro_use]
-extern crate serde_derive;
-
 mod paste_id;
 //mod mpu;
 #[cfg(test)] mod tests;
@@ -20,8 +12,10 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Write,Read};
 use std::time::{Duration, SystemTime};
 
-use rocket::response::NamedFile;
+use serde::{Deserialize, Serialize};
 
+use rocket::{post, put, get, patch, delete, FromForm, routes};
+use rocket::response::NamedFile;
 use rocket::Data;
 use rocket::response::content;
 use rocket::request::{self, Request, FromRequest, State, LenientForm};

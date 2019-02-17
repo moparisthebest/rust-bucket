@@ -6,6 +6,8 @@ use rocket::http::RawStr;
 
 use adjective_adjective_animal::Generator;
 
+use serde::{Deserialize, Serialize};
+
 /// A _probably_ unique paste ID.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PasteID<'a>(Cow<'a, str>);
