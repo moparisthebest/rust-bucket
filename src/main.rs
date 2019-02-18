@@ -7,6 +7,7 @@ mod paste_id;
 use std::io;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::thread;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Write,Read};
@@ -192,7 +193,12 @@ impl Backend for DefaultBackend {
     fn upload_tcp_stream(&self, mut stream: TcpStream) -> Result<()> {
         let (filename, info_filename, url) = self.new_paste();
 
-        PasteInfo::default().write(info_filename)?;
+        let paste_info = PasteInfo::default();
+        println!("before");
+        println!("toml: {}", toml::to_string(&paste_info)?);
+        println!("before2");
+        paste_info.write(info_filename)?;
+        println!("after");
 
         let mut paste_file = File::create(&filename)?;
 
@@ -355,24 +361,26 @@ fn copy<R: ?Sized, W: ?Sized>(reader: &mut R, writer: &mut W, upload_max_size: u
     }
 }
 
-/*
 //fn run_tcp() {
-fn run_tcp<T: Send + Sync + 'static>(backend: T)
-    where T: Backend
+fn run_tcp(backend: Arc<dyn Backend>)
 {
     // Bind the server's socket
     thread::spawn(move || {
         //let backendbla = DefaultBackend::default();
         //let backend = &backendbla;
         //let backend = backend.as_ref();
-        let backend = &backend as &'static Backend;
-        let listener = TcpListener::bind("127.0.0.1:12345").unwrap();
+        //let backend = backend.clone();
+        let host = "127.0.0.1:12345";
+        let listener = TcpListener::bind(host).expect("could not listen on 127.0.0.1:12345");
+        println!("Listening for connections on {}", &host);
 
         loop {
             match listener.accept() {
                 Ok((mut stream, _addr)) => {
+                    println!("got new connection");
+                    let backend = backend.clone();
                     thread::spawn(move || {
-                        backend.upload_tcp_stream(stream).is_ok(); // again we don't care about this error
+                        backend.upload_tcp_stream(stream).expect("wtf");//.is_ok(); // again we don't care about this error
                     });
                 },
                 Err(_e) => {
@@ -383,12 +391,12 @@ fn run_tcp<T: Send + Sync + 'static>(backend: T)
 
     });
 }
-*/
 
 fn main() {
-    let backend = Box::new(DefaultBackend::default());
-    //let tcp_backend = DefaultBackend::default();
-    //run_tcp(tcp_backend);
+    let backend: Arc<Backend> = Arc::new(DefaultBackend::default());
+    run_tcp(backend);
+
     //run_tcp();
-    rocket().manage(backend as Box<Backend + 'static>).launch();
+    let rocket_backend = Box::new(DefaultBackend::default());
+    rocket().manage(rocket_backend as Box<Backend + 'static>).launch();
 }
